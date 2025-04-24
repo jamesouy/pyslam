@@ -47,7 +47,8 @@ fi
 cd opencv-python
 MY_OPENCV_PYTHON_PATH=`pwd`
 
-export MAKEFLAGS="-j$(nproc)"
+# export MAKEFLAGS="-j$(nproc)"
+export MAKEFLAGS="-j8"
 export CPPFLAGS+=""
 export CPATH+=""
 export CPP_INCLUDE_PATH+=""

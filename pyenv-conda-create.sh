@@ -19,7 +19,8 @@ cd "$ROOT_DIR"
 # ====================================================
 
 
-export ENV_NAME=$1
+# export ENV_NAME=$1
+export ENV_NAME=""
 
 if [ -z "$ENV_NAME" ]; then
     ENV_NAME='pyslam'
@@ -37,7 +38,7 @@ if ! command -v conda &> /dev/null ; then
     exit 1
 fi
 
-conda update conda -y
+# conda update conda -y
 
 export PYSLAM_PYTHON_VERSION="3.10.12"
 

@@ -177,14 +177,14 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     # NOTE: Under mac I got segmentation faults when trying to use open3d python bindings
     #       This happends when trying to load the open3d dynamic library.
-    ./install_open3d_python.sh
+    ./install_open3d_python.sh $EXTERNAL_OPTIONS
 
     cd $ROOT_DIR
 fi 
 
 print_blue "=================================================================="
 print_blue "Configuring and building thirdparty/gtsam ..."
-./install_gtsam.sh
+./install_gtsam.sh $EXTERNAL_OPTIONS
 
 cd $ROOT_DIR
 

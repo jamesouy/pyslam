@@ -11,6 +11,20 @@ SCRIPT_DIR=$(readlink -f $SCRIPT_DIR)  # this reads the actual path if a symboli
 ROOT_DIR="$SCRIPT_DIR"
 
 # ====================================================
+# check if we have external options
+EXTERNAL_OPTIONS=$@
+if [[ -n "$EXTERNAL_OPTIONS" ]]; then
+    echo "external option: $EXTERNAL_OPTIONS" 
+fi
+
+# OpenCV_DIR="$SCRIPT_DIR/../opencv/install/lib/cmake/opencv4"
+# if [[ -d "$OpenCV_DIR" ]]; then
+#     EXTERNAL_OPTIONS="$EXTERNAL_OPTIONS -DOpenCV_DIR=$OpenCV_DIR"
+# fi 
+
+echo "EXTERNAL_OPTIONS: $EXTERNAL_OPTIONS"
+
+# ====================================================
 # import the bash utils 
 . "$ROOT_DIR"/bash_utils.sh 
 

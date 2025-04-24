@@ -4,7 +4,8 @@
 
 #echo "usage: ./${0##*/} <env-name>"
 
-export ENV_NAME=$1
+# export ENV_NAME=$1
+export ENV_NAME=""
 
 if [ -z "${ENV_NAME}" ]; then
     ENV_NAME='pyslam'
@@ -26,6 +27,8 @@ if [ -z "$CONDA_PREFIX" ]; then
     CONDA_PREFIX=$(conda info --base)
 fi
 . "$CONDA_PREFIX"/bin/activate base   # from https://community.anaconda.cloud/t/unable-to-activate-environment-prompted-to-run-conda-init-before-conda-activate-but-it-doesnt-work/68677/10
+# note: the above will generate an error if a conda env is already activated. You can ignore that
+
 conda activate $ENV_NAME
 
 # N.B.: in order to deactivate the virtual environment run: 

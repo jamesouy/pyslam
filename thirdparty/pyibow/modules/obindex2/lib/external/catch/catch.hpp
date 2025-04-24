@@ -2075,13 +2075,18 @@ void writeToDebugConsole(std::string const& text);
 
 // The following code snippet based on:
 // http://cocoawithlove.com/2008/03/break-into-debugger.html
-#if defined(__ppc64__) || defined(__ppc__)
-#define CATCH_TRAP()                                             \
-    __asm__("li r0, 20\nsc\nnop\nli r0, 37\nli r4, 2\nsc\nnop\n" \
-            : : : "memory", "r0", "r3", "r4") /* NOLINT */
-#else
-#define CATCH_TRAP() __asm__("int $3\n" : : /* NOLINT */)
+#if defined(__i386__) || defined(__x86_64__)
+#define CATCH_TRAP() __asm__("int $3\n" : : ) /* NOLINT */
+#elif defined(__aarch64__)
+#define CATCH_TRAP()  __asm__(".inst 0xd4200000")
 #endif
+// #if defined(__ppc64__) || defined(__ppc__)
+// #define CATCH_TRAP()                                             \
+//     __asm__("li r0, 20\nsc\nnop\nli r0, 37\nli r4, 2\nsc\nnop\n" \
+//             : : : "memory", "r0", "r3", "r4") /* NOLINT */
+// #else
+// #define CATCH_TRAP() __asm__("int $3\n" : : /* NOLINT */)
+// #endif
 
 #elif defined(CATCH_PLATFORM_LINUX)
    // If we can use inline assembler, do it because this allows us to break
@@ -7236,22 +7241,28 @@ bool Session::alreadyInstantiated = false;
 #include <sstream>
 #include <vector>
 
+#ifdef CATCH_CONFIG_CPP11_SHUFFLE
+#include <random>
+#endif
+
 namespace Catch {
 
 struct RandomNumberGenerator {
-    typedef std::ptrdiff_t result_type;
+//     typedef std::ptrdiff_t result_type;
 
-    result_type operator()(result_type n) const { return std::rand() % n; }
+//     result_type operator()(result_type n) const { return std::rand() % n; }
 
-#ifdef CATCH_CONFIG_CPP11_SHUFFLE
-    static constexpr result_type min() { return 0; }
-    static constexpr result_type max() { return 1000000; }
-    result_type operator()() const { return std::rand() % max(); }
-#endif
+// #ifdef CATCH_CONFIG_CPP11_SHUFFLE
+//     static constexpr result_type min() { return 0; }
+//     static constexpr result_type max() { return 1000000; }
+//     result_type operator()() const { return std::rand() % max(); }
+// #endif
     template <typename V>
     static void shuffle(V& vector) {
-        RandomNumberGenerator rng;
+        // RandomNumberGenerator rng;
 #ifdef CATCH_CONFIG_CPP11_SHUFFLE
+        std::random_device device;
+        std::mt19937 rng( device() );
         std::shuffle(vector.begin(), vector.end(), rng);
 #else
         std::random_shuffle(vector.begin(), vector.end(), rng);

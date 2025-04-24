@@ -4,6 +4,10 @@
 
 #N.B: this install script allows you to run main_slam.py and all the scripts 
 
+# PATH="/Users/home/Desktop/School/ar_research/cmake-3.19.8-macos-universal/CMake.app/Contents/bin:$PATH" # earliest version with macos-universal
+PATH="/Users/home/Desktop/School/ar_research/cmake-3.24.4-macos-universal/CMake.app/Contents/bin:$PATH" # open3d requires >3.24
+# PATH="/Users/home/Desktop/School/ar_research/cmake-3.29.9-macos-universal/CMake.app/Contents/bin:$PATH"
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ) # get script dir
 SCRIPT_DIR=$(readlink -f $SCRIPT_DIR)  # this reads the actual path if a symbolic directory is used
 
@@ -36,10 +40,12 @@ if ! command -v conda &> /dev/null ; then
 fi
 
 # 1. install system packages 
-./install_system_packages.sh     
+# ./install_system_packages.sh     
 
 # 2. create a pyslam environment within conda (this will set the env var USING_CONDA_PYSLAM)
-./pyenv-conda-create.sh 
+# ./pyenv-conda-create.sh 
+
+exit 0
 
 # 3. activate the created python virtual environment 
 . pyenv-activate.sh   
