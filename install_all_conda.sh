@@ -40,12 +40,10 @@ if ! command -v conda &> /dev/null ; then
 fi
 
 # 1. install system packages 
-# ./install_system_packages.sh     
+./install_system_packages.sh     
 
 # 2. create a pyslam environment within conda (this will set the env var USING_CONDA_PYSLAM)
-# ./pyenv-conda-create.sh 
-
-exit 0
+./pyenv-conda-create.sh 
 
 # 3. activate the created python virtual environment 
 . pyenv-activate.sh   
