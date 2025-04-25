@@ -117,6 +117,7 @@ if __name__ == "__main__":
     # LoopDetectorConfigs: DBOW2, DBOW2_INDEPENDENT, DBOW3, DBOW3_INDEPENDENT, IBOW, OBINDEX2, VLAD, HDC_DELF, SAD, ALEXNET, NETVLAD, COSPLACE, EIGENPLACES  etc.
     # NOTE: under mac, the boost/text deserialization used by DBOW2 and DBOW3 may be very slow.
     loop_detection_config = LoopDetectorConfigs.DBOW3
+    # loop_detection_config = LoopDetectorConfigs.VLAD
 
     # Override the feature tracker and loop detector configuration from the `settings` file
     if config.feature_tracker_config_name is not None:  # Check if we set `FeatureTrackerConfig.name` in the `settings` file 
@@ -136,7 +137,7 @@ if __name__ == "__main__":
         Parameters.kVolumetricIntegrationUseDepthEstimator = False  # Just use this depth estimator in the front-end (This is not a choice, we are imposing it for avoiding computing the depth twice)
         # Select your depth estimator (see the file depth_estimator_factory.py)
         # DEPTH_ANYTHING_V2, DEPTH_PRO, DEPTH_RAFT_STEREO, DEPTH_SGBM, etc.
-        depth_estimator_type = DepthEstimatorType.DEPTH_PRO
+        depth_estimator_type = DepthEstimatorType.DEPTH_ANYTHING_V2
         max_depth = 20
         depth_estimator = depth_estimator_factory(depth_estimator_type=depth_estimator_type, max_depth=max_depth,
                                                   dataset_env_type=dataset.environmentType(), camera=camera) 

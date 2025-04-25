@@ -88,11 +88,11 @@ if __name__ == "__main__":
                 
     # Select your volumetric integrator here (see the file volumetric_integrator_factory.py) 
     volumetric_integrator_type = VolumetricIntegratorType.TSDF     # TSDF, GAUSSIAN_SPLATTING
-    Parameters.kVolumetricIntegrationUseDepthEstimator = (slam.sensor_type==SensorType.STEREO) # Use depth estimator for volumetric integration in the back-end in the case of stereo data. 
+    # Parameters.kVolumetricIntegrationUseDepthEstimator = (slam.sensor_type==SensorType.STEREO) # Use depth estimator for volumetric integration in the back-end in the case of stereo data. 
                                                                                     # Since the depth inference time may be above 1 second, the volumetric integrator may be very slow.
                                                                                     # NOTE: The depth estimator estimates a metric depth (with an absolute scale). You can't combine it with a MONOCULAR SLAM output
                                                                                     # since the SLAM sparse map scale will not be consistent.
-    Parameters.kVolumetricIntegrationDepthEstimatorType = "DEPTH_RAFT_STEREO"  # "DEPTH_PRO","DEPTH_ANYTHING_V2, "DEPTH_SGBM", "DEPTH_RAFT_STEREO", "DEPTH_CRESTEREO_PYTORCH"  (see depth_estimator_factory.py)    
+    Parameters.kVolumetricIntegrationDepthEstimatorType = "DEPTH_ANYTHING_V2"  # "DEPTH_PRO","DEPTH_ANYTHING_V2, "DEPTH_SGBM", "DEPTH_RAFT_STEREO", "DEPTH_CRESTEREO_PYTORCH"  (see depth_estimator_factory.py)    
     Parameters.kVolumetricIntegrationMinNumLBATimes = 0 # NOTE: This avoids the volumetric integrator integrates just keyframes with lba_count >= kVolumetricIntegrationMinNumLBATimes    
     if Parameters.kVolumetricIntegrationUseDepthEstimator:
         print(f'Using depth estimator: {Parameters.kVolumetricIntegrationDepthEstimatorType}')
