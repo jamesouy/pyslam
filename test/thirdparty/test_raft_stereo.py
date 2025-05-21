@@ -30,9 +30,9 @@ def demo(args, imgfile1, imgfile2, restore_ckpt):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == 'cuda':
-        print('DepthEstimatorDepthPro: Using CUDA')
+        print('DepthEstimatorTest: Using CUDA')
     else:
-        print('DepthEstimatorDepthPro: Using CPU')
+        print('DepthEstimatorTest: Using CPU')
 
     model = model.module
     model.to(device)

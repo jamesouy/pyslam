@@ -516,6 +516,7 @@ class VolumetricIntegratorBase:
     def flush_keyframe_queue(self):
         # iterate over the keyframe queue and flush the keyframes into the task queue
         with self.keyframe_queue_lock:
+            print("flushing keyframe queue:", len(self.keyframe_queue))
             i = 0  
             while i < len(self.keyframe_queue):
                 kf_to_process = self.keyframe_queue[i]
@@ -530,13 +531,16 @@ class VolumetricIntegratorBase:
                     i += 1  # Only move forward if no removal to avoid skipping   
 
     def add_keyframe(self, keyframe: KeyFrame, img, img_right, depth, print=print):
-        use_depth_estimator = Parameters.kVolumetricIntegrationUseDepthEstimator          
+        print("add_keyframe")      
+        use_depth_estimator = Parameters.kVolumetricIntegrationUseDepthEstimator    
         if depth is None and not use_depth_estimator:
+            print("not appending keyframe:", depth, use_depth_estimator)
             VolumetricIntegratorBase.print(f'VolumetricIntegratorBase: add_keyframe: depth is None -> skipping frame {keyframe.id}')
             return
         try:
             # We accumulate the keyframe in a queue. 
             # We integrate only the keyframes that have been processed by LBA at least once.
+            print("appending keyframe")
             self.keyframe_queue.append(keyframe)
             self.flush_keyframe_queue()    
             

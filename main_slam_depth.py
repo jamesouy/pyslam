@@ -52,6 +52,8 @@ from loop_detector_configs import LoopDetectorConfigs
 from depth_estimator_factory import depth_estimator_factory, DepthEstimatorType
 from utils_depth import img_from_depth, filter_shadow_points
 
+from frame import Frame
+
 from config_parameters import Parameters  
 
 from rerun_interface import Rerun
@@ -61,7 +63,6 @@ import traceback
 
 import argparse
 
-import g2o
 import pandas as pd
 
 
@@ -141,7 +142,7 @@ if __name__ == "__main__":
         # Select your depth estimator (see the file depth_estimator_factory.py)
         # DEPTH_ANYTHING_V2, DEPTH_PRO, DEPTH_RAFT_STEREO, DEPTH_SGBM, etc.
         depth_estimator_type = DepthEstimatorType.DEPTH_ANYTHING_V2
-        max_depth = 30
+        max_depth = 20
         depth_estimator = depth_estimator_factory(depth_estimator_type=depth_estimator_type, max_depth=max_depth,
                                                   dataset_env_type=dataset.environmentType(), camera=camera) 
         Printer.green(f'Depth_estimator_type: {depth_estimator_type.name}, max_depth: {max_depth}')       
@@ -190,12 +191,13 @@ if __name__ == "__main__":
     num_tracking_lost = 0
     num_frames = 0
 
-    total_times = []
+    depth_times = []
+    frame_times = []
             
-    img_id = 0  # 210, 340, 400, 770   # you can start from a desired frame id if needed 
+    img_id = 0  #210, 340, 400, 770   # you can start from a desired frame id if needed 
     while not is_viewer_closed:
 
-        pd.DataFrame({'total_time': total_times}).to_csv("times_total.csv")
+        pd.DataFrame({'depth_time': depth_times, 'frame_time': frame_times}).to_csv("times.csv")
         
         img, img_right, depth = None, None, None    
         
@@ -221,54 +223,59 @@ if __name__ == "__main__":
 
                 print(f'image: {img_id}, timestamp: {timestamp}, duration: {frame_duration}') 
 
-                pose_prior = dataset.getPosePrior()
-                if pose_prior is not None:
-                    pos, quat = pose_prior
-                    pose_prior = g2o.Isometry3d(g2o.Quaternion(*quat), pos)
-
-                if img_id < 180:
-                    img_id += 1 
-                    num_frames += 1
-                    continue
+                # if img_id < 85:
+                #     img_id += 1 
+                #     num_frames += 1
+                #     continue
                 
                 time_start = None 
                 if img is not None:
                     time_start = time.time()    
                     
+                    
                     if depth is None and depth_estimator:
+                        time_depth = time.perf_counter()
                         depth_prediction, pts3d_prediction = depth_estimator.infer(img, img_right)
                         if Parameters.kDepthEstimatorRemoveShadowPointsInFrontEnd:
                             depth = filter_shadow_points(depth_prediction)
                         else: 
                             depth = depth_prediction
+                        depth_times.append(time.perf_counter()-time_depth)
+                        print(f"Depth prediction: {depth_times[-1]:.5f}")
                         
                         if not args.headless:
                             depth_img = img_from_depth(depth_prediction, img_min=0, img_max=50)
                             cv2.imshow("depth prediction", depth_img)
                                   
-                    slam.track(img, img_right, depth, img_id, timestamp, pose_prior)  # main SLAM function 
+                    # slam.track(img, img_right, depth, img_id, timestamp)  # main SLAM function 
+
+                    time_frame = time.perf_counter()
+                    frame = Frame(slam.tracking.camera, img, img_right=img_right, depth=depth, timestamp=timestamp, img_id=img_id) 
+                    frame_times.append(time.perf_counter()-time_frame)
+                    print(f"Frame extraction: {frame_times[-1]:.5f}")
                                     
                     # 3D display (map display)
-                    if viewer3D:
-                        viewer3D.draw_slam_map(slam)
+                    # if viewer3D:
+                    #     viewer3D.draw_slam_map(slam)
 
                     if not args.headless:
-                        img_draw = slam.map.draw_feature_trails(img)
+                        # img_draw = slam.map.draw_feature_trails(img)
+                        img_draw = frame.draw_all_feature_trails(img)
+                        # img_draw = img
                         img_writer.write(img_draw, f'id: {img_id}', (30, 30))
                         # 2D display (image display)
                         cv2.imshow('Camera', img_draw)
                     
                     # draw 2d plots
-                    if plot_drawer:
-                        plot_drawer.draw(img_id)
+                    # if plot_drawer:
+                    #     plot_drawer.draw(img_id)
                         
-                if online_trajectory_writer is not None and slam.tracking.cur_R is not None and slam.tracking.cur_t is not None:
-                    online_trajectory_writer.write_trajectory(slam.tracking.cur_R, slam.tracking.cur_t, timestamp)
+                # if online_trajectory_writer is not None and slam.tracking.cur_R is not None and slam.tracking.cur_t is not None:
+                #     online_trajectory_writer.write_trajectory(slam.tracking.cur_R, slam.tracking.cur_t, timestamp)
                     
                 if time_start is not None: 
                     duration = time.time()-time_start
-                    total_times.append(duration)
-                    print(f"Total took {duration} seconds")
+                    print(f"Frame took {duration:.5f} seconds")
                     if(frame_duration > duration):
                         time.sleep(frame_duration-duration) 
                     
@@ -280,8 +287,8 @@ if __name__ == "__main__":
                     break # exit from the loop if headless
                 
             # 3D display (map display)
-            if viewer3D:
-                viewer3D.draw_dense_map(slam)  
+            # if viewer3D:
+            #     viewer3D.draw_dense_map(slam)  
                               
         else:
             time.sleep(0.1)     # pause or do step on GUI                           
@@ -312,12 +319,12 @@ if __name__ == "__main__":
                             
         if viewer3D:
             
-            if not is_paused and viewer3D.is_paused():  # when a pause is triggered
-                est_poses, timestamps, ids = slam.get_final_trajectory()
-                assoc_timestamps, assoc_est_poses, assoc_gt_poses = find_poses_associations(timestamps, est_poses, gt_timestamps, gt_poses)
-                ape_stats, T_gt_est = eval_ate(poses_est=assoc_est_poses, poses_gt=assoc_gt_poses, frame_ids=ids, 
-                        curr_frame_id=img_id, is_final=False, is_monocular=is_monocular, save_dir=None)
-                Printer.green(f"EVO stats: {json.dumps(ape_stats, indent=4)}")
+            # if not is_paused and viewer3D.is_paused():  # when a pause is triggered
+            #     est_poses, timestamps, ids = slam.get_final_trajectory()
+            #     assoc_timestamps, assoc_est_poses, assoc_gt_poses = find_poses_associations(timestamps, est_poses, gt_timestamps, gt_poses)
+            #     ape_stats, T_gt_est = eval_ate(poses_est=assoc_est_poses, poses_gt=assoc_gt_poses, frame_ids=ids, 
+            #             curr_frame_id=img_id, is_final=False, is_monocular=is_monocular, save_dir=None)
+            #     Printer.green(f"EVO stats: {json.dumps(ape_stats, indent=4)}")
                 #draw_associated_cameras(viewer3D, assoc_est_poses, assoc_gt_poses, T_gt_est)
                         
             is_paused = viewer3D.is_paused()    

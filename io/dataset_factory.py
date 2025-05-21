@@ -54,6 +54,7 @@ def dataset_factory(config:'Config'):
     type = DatasetType.NONE
     associations = None  # name of the file with the associations
     timestamps = None    
+    pose_priors = None    
     path = None 
     is_color = None  # used for kitti datasets
 
@@ -91,6 +92,8 @@ def dataset_factory(config:'Config'):
         associations = dataset_settings['associations']
     if 'timestamps' in dataset_settings:
         timestamps = dataset_settings['timestamps']
+    if 'pose_priors' in dataset_settings:
+        pose_priors = dataset_settings['pose_priors']
     if 'is_color' in dataset_settings:
         is_color = dataset_settings['is_color']
 
@@ -113,7 +116,7 @@ def dataset_factory(config:'Config'):
         fps = 10 # a default value 
         if 'fps' in dataset_settings:
             fps = int(dataset_settings['fps'])
-        dataset = FolderDataset(path, name, sensor_type, fps, associations, timestamps, start_frame_id, DatasetType.FOLDER)      
+        dataset = FolderDataset(path, name, sensor_type, fps, associations, timestamps, start_frame_id, DatasetType.FOLDER, pose_priors)      
     if type == 'live':
         dataset = LiveDataset(path, name, sensor_type, associations, start_frame_id, DatasetType.LIVE)   
     if type == 'ros1bag':

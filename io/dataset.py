@@ -27,6 +27,8 @@ import time
 import csv
 import re 
 
+import pandas as pd
+
 from multiprocessing import Process, Queue, Value 
 from utils_sys import Printer
 from utils_serialization import SerializableEnum, register_class, SerializationJSON
@@ -68,6 +70,10 @@ class Dataset(object):
         self.timestamps = None 
         self._timestamp = None       # current timestamp if available [s]
         self._next_timestamp = None  # next timestamp if available otherwise an estimate [s]
+
+        self.pose_priors = None       # current timestamp if available [s]    
+        self._pose_prior = None       # current timestamp if available [s]
+
         self.associations = associations  # name of the file with the associations
         
         self.minimal_config = MinimalDatasetConfig()
@@ -155,6 +161,9 @@ class Dataset(object):
         except FileNotFoundError:
             print('Timestamps file not found:', timestamps_file)
         return timestamps
+    
+    def getPosePrior(self):
+        return self._pose_prior
     
     def to_json(self):
         return self.minimal_config.to_json()
@@ -259,7 +268,7 @@ class LiveDataset(Dataset):
 
 
 class FolderDataset(Dataset): 
-    def __init__(self, path, name, sensor_type=SensorType.MONOCULAR, fps=None, associations=None, timestamps=None, start_frame_id=0, type=DatasetType.VIDEO): 
+    def __init__(self, path, name, sensor_type=SensorType.MONOCULAR, fps=None, associations=None, timestamps=None, start_frame_id=0, type=DatasetType.VIDEO, pose_priors=None): 
         super().__init__(path, name, sensor_type, fps, associations, start_frame_id, type)
         if sensor_type != SensorType.MONOCULAR:
             raise ValueError('Video dataset only supports MONOCULAR sensor type')        
@@ -288,7 +297,26 @@ class FolderDataset(Dataset):
             if not os.path.exists(timestamps_path):
                 raise FileNotFoundError(f"Timestamps file does not exist: {timestamps_path}")            
             self.timestamps = self._read_timestamps(timestamps_path)
-            Printer.green('read timestamps from ' + timestamps_path)            
+            Printer.green('read timestamps from ' + timestamps_path)        
+        self._pose_prior = None
+        self.pose_priors = None
+        if pose_priors is not None:
+            poses_path = os.path.join(path, pose_priors)
+            if not os.path.exists(poses_path):
+                raise FileNotFoundError(f"Timestamps file does not exist: {poses_path}")            
+            self.pose_priors = self._read_pose_priors(poses_path)    
+
+    def _read_pose_priors(self, poses_file):
+        pose_priors = []
+        try:
+            poses = pd.read_csv(poses_file)
+            for i, row in poses.iterrows():
+                pos = np.array(row[['pos_x', 'pos_y', 'pos_z']])
+                quat = np.array(row[['rot_x', 'rot_y', 'rot_z', 'rot_w']])
+                pose_priors.append((pos, quat))
+        except FileNotFoundError:
+            print('Pose priors file not found:', poses_file)
+        return pose_priors
         
     def getImage(self, frame_id):
         if self.i == self.maxlen:
@@ -308,6 +336,10 @@ class FolderDataset(Dataset):
         else:
             self._timestamp += self.Ts
             self._next_timestamp = self._timestamp + self.Ts 
+
+        if self.pose_priors is not None:
+            self._pose_prior = self.pose_priors[self.i]
+            
         if img is None: 
             raise IOError('error reading file: ', image_file)               
         # Increment internal counter.

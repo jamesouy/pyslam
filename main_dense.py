@@ -51,6 +51,8 @@ from loop_detector_configs import LoopDetectorConfigs
 
 from depth_estimator_factory import depth_estimator_factory, DepthEstimatorType
 from utils_depth import img_from_depth, filter_shadow_points
+from volumetric_integrator_factory import volumetric_integrator_factory, VolumetricIntegratorType
+from slam import KeyFrame, Frame, FeatureTrackerShared, feature_tracker_factory
 
 from config_parameters import Parameters  
 
@@ -63,6 +65,7 @@ import argparse
 
 import g2o
 import pandas as pd
+import scipy
 
 
 datetime_string = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -116,10 +119,10 @@ if __name__ == "__main__":
     # WARNING: At present, SLAM does not support LOFTR and other "pure" image matchers (further details in the commenting notes about LOFTR in feature_tracker_configs.py).
     feature_tracker_config = FeatureTrackerConfigs.ORB2
         
-    # Select your loop closing configuration (see the file loop_detector_configs.py). Set it to None to disable loop closing. 
-    # LoopDetectorConfigs: DBOW2, DBOW2_INDEPENDENT, DBOW3, DBOW3_INDEPENDENT, IBOW, OBINDEX2, VLAD, HDC_DELF, SAD, ALEXNET, NETVLAD, COSPLACE, EIGENPLACES  etc.
-    # NOTE: under mac, the boost/text deserialization used by DBOW2 and DBOW3 may be very slow.
-    # loop_detection_config = LoopDetectorConfigs.DBOW3
+    # # Select your loop closing configuration (see the file loop_detector_configs.py). Set it to None to disable loop closing. 
+    # # LoopDetectorConfigs: DBOW2, DBOW2_INDEPENDENT, DBOW3, DBOW3_INDEPENDENT, IBOW, OBINDEX2, VLAD, HDC_DELF, SAD, ALEXNET, NETVLAD, COSPLACE, EIGENPLACES  etc.
+    # # NOTE: under mac, the boost/text deserialization used by DBOW2 and DBOW3 may be very slow.
+    # # loop_detection_config = LoopDetectorConfigs.DBOW3
     loop_detection_config = LoopDetectorConfigs.VLAD
 
     # Override the feature tracker and loop detector configuration from the `settings` file
@@ -141,11 +144,15 @@ if __name__ == "__main__":
         # Select your depth estimator (see the file depth_estimator_factory.py)
         # DEPTH_ANYTHING_V2, DEPTH_PRO, DEPTH_RAFT_STEREO, DEPTH_SGBM, etc.
         depth_estimator_type = DepthEstimatorType.DEPTH_ANYTHING_V2
-        max_depth = 30
+        max_depth = 20
         depth_estimator = depth_estimator_factory(depth_estimator_type=depth_estimator_type, max_depth=max_depth,
                                                   dataset_env_type=dataset.environmentType(), camera=camera) 
         Printer.green(f'Depth_estimator_type: {depth_estimator_type.name}, max_depth: {max_depth}')       
                 
+    Parameters.kVolumetricIntegrationMinNumLBATimes = 0
+    volumetric_integrator = volumetric_integrator_factory(VolumetricIntegratorType.TSDF, camera, 
+                                                          dataset.environmentType(), dataset.sensorType())
+    
     # create SLAM object
     slam = Slam(camera, feature_tracker_config, 
                 loop_detection_config, dataset.sensorType(), 
@@ -204,7 +211,7 @@ if __name__ == "__main__":
             
         if do_reset: 
             Printer.yellow('do reset: ', do_reset)
-            slam.reset()
+            # slam.reset()
                
         if not is_paused or do_step:
         
@@ -224,12 +231,21 @@ if __name__ == "__main__":
                 pose_prior = dataset.getPosePrior()
                 if pose_prior is not None:
                     pos, quat = pose_prior
-                    pose_prior = g2o.Isometry3d(g2o.Quaternion(*quat), pos)
+                    # pose_prior = g2o.Isometry3d(g2o.Quaternion(*quat), pos) # FIXME: this is wrong
+                    R = scipy.spatial.transform.Rotation.from_quat(quat).as_matrix()
+                    R = (R).T
+                    t = pos
+                    t = pos * np.array([-1, 1, 1])
+                    # T = np.vstack([np.hstack([R, t.reshape((-1, 1))]), [0, 0, 0, 1]])
+                    # Tinv = np.linalg.inv(T)
+                    # R = T[:3,:3]
+                    # t = T[:3,3].reshape(3)
+                    pose_prior = g2o.Isometry3d(R, t)
 
-                if img_id < 180:
-                    img_id += 1 
-                    num_frames += 1
-                    continue
+                # if img_id < 100:
+                #     img_id += 1 
+                #     num_frames += 1
+                #     continue
                 
                 time_start = None 
                 if img is not None:
@@ -245,25 +261,43 @@ if __name__ == "__main__":
                         if not args.headless:
                             depth_img = img_from_depth(depth_prediction, img_min=0, img_max=50)
                             cv2.imshow("depth prediction", depth_img)
+                            print("showing depth", depth_img)
                                   
-                    slam.track(img, img_right, depth, img_id, timestamp, pose_prior)  # main SLAM function 
+                    # slam.track(img, img_right, depth, img_id, timestamp, pose_prior)  # main SLAM function 
+
+                    frame = Frame(camera, img, img_right=img_right, depth=depth, timestamp=timestamp, img_id=img_id, pose=pose_prior)
+                    kf = KeyFrame(frame, img, img_right, depth)
+                    print("calling add_keyframe")
+                    volumetric_integrator.add_keyframe(kf, kf.img, kf.img_right, kf.depth_img, print)
+                    volumetric_integrator.add_update_output_task()
+                    time.sleep(0.1)
+                    
+                    dense_map_output = None
+                    if volumetric_integrator.q_out.qsize() > 0:            
+                        dense_map_output = volumetric_integrator.pop_output()
+                        if dense_map_output is not None:
+                            print("drawing dense geometry")
+                            viewer3D.draw_dense_geometry(dense_map_output.point_cloud, dense_map_output.mesh)
+                    # i += 1
                                     
                     # 3D display (map display)
-                    if viewer3D:
-                        viewer3D.draw_slam_map(slam)
+                    # if viewer3D:
+                    #     viewer3D.draw_slam_map(slam)
 
                     if not args.headless:
-                        img_draw = slam.map.draw_feature_trails(img)
+                        # img_draw = slam.map.draw_feature_trails(img)
+                        img_draw = frame.draw_all_feature_trails(img)
+                        # img_draw = img
                         img_writer.write(img_draw, f'id: {img_id}', (30, 30))
                         # 2D display (image display)
                         cv2.imshow('Camera', img_draw)
                     
                     # draw 2d plots
-                    if plot_drawer:
-                        plot_drawer.draw(img_id)
+                    # if plot_drawer:
+                    #     plot_drawer.draw(img_id)
                         
-                if online_trajectory_writer is not None and slam.tracking.cur_R is not None and slam.tracking.cur_t is not None:
-                    online_trajectory_writer.write_trajectory(slam.tracking.cur_R, slam.tracking.cur_t, timestamp)
+                # if online_trajectory_writer is not None and slam.tracking.cur_R is not None and slam.tracking.cur_t is not None:
+                #     online_trajectory_writer.write_trajectory(slam.tracking.cur_R, slam.tracking.cur_t, timestamp)
                     
                 if time_start is not None: 
                     duration = time.time()-time_start
@@ -280,8 +314,8 @@ if __name__ == "__main__":
                     break # exit from the loop if headless
                 
             # 3D display (map display)
-            if viewer3D:
-                viewer3D.draw_dense_map(slam)  
+            # if viewer3D:
+            #     viewer3D.draw_dense_map(slam)  
                               
         else:
             time.sleep(0.1)     # pause or do step on GUI                           
@@ -301,7 +335,7 @@ if __name__ == "__main__":
                 
         # manage interface infos  
         if is_map_save:
-            slam.save_system_state(config.system_state_folder_path)
+            # slam.save_system_state(config.system_state_folder_path)
             dataset.save_info(config.system_state_folder_path)
             groundtruth.save(config.system_state_folder_path)
             Printer.blue('\nuncheck pause checkbox on GUI to continue...\n')    
@@ -312,13 +346,13 @@ if __name__ == "__main__":
                             
         if viewer3D:
             
-            if not is_paused and viewer3D.is_paused():  # when a pause is triggered
-                est_poses, timestamps, ids = slam.get_final_trajectory()
-                assoc_timestamps, assoc_est_poses, assoc_gt_poses = find_poses_associations(timestamps, est_poses, gt_timestamps, gt_poses)
-                ape_stats, T_gt_est = eval_ate(poses_est=assoc_est_poses, poses_gt=assoc_gt_poses, frame_ids=ids, 
-                        curr_frame_id=img_id, is_final=False, is_monocular=is_monocular, save_dir=None)
-                Printer.green(f"EVO stats: {json.dumps(ape_stats, indent=4)}")
-                #draw_associated_cameras(viewer3D, assoc_est_poses, assoc_gt_poses, T_gt_est)
+            # if not is_paused and viewer3D.is_paused():  # when a pause is triggered
+            #     est_poses, timestamps, ids = slam.get_final_trajectory()
+            #     assoc_timestamps, assoc_est_poses, assoc_gt_poses = find_poses_associations(timestamps, est_poses, gt_timestamps, gt_poses)
+            #     ape_stats, T_gt_est = eval_ate(poses_est=assoc_est_poses, poses_gt=assoc_gt_poses, frame_ids=ids, 
+            #             curr_frame_id=img_id, is_final=False, is_monocular=is_monocular, save_dir=None)
+            #     Printer.green(f"EVO stats: {json.dumps(ape_stats, indent=4)}")
+            #     #draw_associated_cameras(viewer3D, assoc_est_poses, assoc_gt_poses, T_gt_est)
                         
             is_paused = viewer3D.is_paused()    
             is_map_save = viewer3D.is_map_save() and is_map_save == False 
@@ -359,6 +393,7 @@ if __name__ == "__main__":
 
     # close stuff 
     slam.quit()
+    volumetric_integrator.quit()
     if plot_drawer:
         plot_drawer.quit()         
     if viewer3D:

@@ -20,6 +20,8 @@
 import numpy as np 
 import cv2
 
+from config_parameters import Parameters  
+
 from camera import Camera
 from feature_tracker import FeatureTrackerTypes, FeatureTrackingResult, FeatureTracker
 from utils_geom import poseRt, is_rotation_matrix, closest_rotation_matrix
@@ -37,6 +39,9 @@ kRansacThresholdPixels = 0.1                   # pixel threshold used for image 
 kUseEssentialMatrixEstimation = True           # using the essential matrix fitting algorithm is more robust RANSAC given five-point algorithm solver 
 kRansacProb = 0.999                            # (originally 0.999)
 kMinAveragePixelShiftForMotionEstimation = 1.5 # if the average pixel shift is below this threshold, motion is considered to be small enough to be ignored
+kRansacThresholdNormalized = Parameters.kRansacThresholdNormalized
+kRansacThresholdPixels = Parameters.kRansacThresholdPixels
+kRansacProb = Parameters.kRansacProb
 
 kUseGroundTruthScale = True 
 kAbsoluteScaleThresholdKitti = 0.1             # absolute translation scale; it is also the minimum translation norm for an accepted motion 

@@ -6,10 +6,10 @@ DATASET:
   #type: ICL_NUIM_DATASET
   #type: REPLICA_DATASET
   #type: TARTANAIR_DATASET
-  type: VIDEO_DATASET
+  # type: VIDEO_DATASET
   #type: ROS1BAG_DATASET
   #type: ROS2BAG_DATASET  
-  #type: FOLDER_DATASET
+  type: FOLDER_DATASET
   #type: LIVE_DATASET  # Not recommended for current development stage
 
 
@@ -121,6 +121,22 @@ VIDEO_DATASET:
   # base_path: ../data/apartment/pyslam
   # settings: ../data/apartment/pyslam/settings.yaml
   # name: video_color.mp4
+  base_path: ../data/apartment_room/pyslam
+  settings: ../data/apartment_room/pyslam/settings.yaml
+  name: apartment30.mp4
+  # base_path: ../data/parking_lot/pyslam
+  # settings: ../data/parking_lot/pyslam/settings.yaml
+  # name: video2.mp4
+  # base_path: ../data/gdc_outside/pyslam
+  # settings: ../data/gdc_outside/pyslam/settings.yaml
+  # name: video.mp4
+  #
+  # base_path: ../data/phone/pyslam
+  # settings: ../data/phone/pyslam/settings.yaml
+  # name: video2.mp4
+  # base_path: ../data/phone_cropped/pyslam
+  # settings: ../data/phone_cropped/pyslam/settings.yaml
+  # name: apartment60.mp4
   #
   #base_path: ./data/videos/webcam
   #settings: settings/WEBCAM.yaml 
@@ -133,12 +149,30 @@ VIDEO_DATASET:
 FOLDER_DATASET:
   type: folder 
   sensor_type: mono   # Here, 'sensor_type' can be only 'mono' 
-  base_path: /home/luigi/Work/rgbd_datasets2/kitti/dataset/sequences/00/image_0/
-  # 'name' is used for specifying a glob pattern, e.g. *png, *jpeg, etc...
   name: '*png'  
-  settings: settings/KITTI00-02.yaml
-  groundtruth_file: groundtruth.txt
-  fps: 20
+  # base_path: /home/luigi/Work/rgbd_datasets2/kitti/dataset/sequences/00/image_0/
+  # # 'name' is used for specifying a glob pattern, e.g. *png, *jpeg, etc...
+  # settings: settings/KITTI00-02.yaml
+  # groundtruth_file: groundtruth.txt
+  # fps: 20
+  # #timestamps: times.txt # can be used here and to be intended as the frame timestamps 
+  #
+  # base_path: ../data/gdc_outside/images/
+  # settings: ../data/gdc_outside/pyslam/settings.yaml
+  # base_path: ../data/parking_lot/images/
+  # settings: ../data/parking_lot/pyslam/settings.yaml
+  base_path: ../data/gdc/images/
+  # settings: ../data/gdc/pyslam/settings.yaml
+  # base_path: ../data/apartment/images/
+  # settings: ../data/apartment/pyslam/settings.yaml
+  # base_path: ../data/apartment_small/images/
+  # settings: ../data/apartment_small/pyslam/settings.yaml
+  
+  settings: ../data/pyslam_settings.yaml
+  groundtruth_file: ../pyslam/groundtruth.txt
+  pose_priors: ../pose.csv
+  fps: 10
+  # start_frame_id: 155
   #timestamps: times.txt # can be used here and to be intended as the frame timestamps 
 
 
@@ -238,5 +272,21 @@ GLOBAL_PARAMETERS:
   kUseVolumetricIntegration: True
   kVolumetricIntegrationUseDepthEstimator: True
   kUseDepthEstimatorInFrontEnd: True
+  kVolumetricIntegrationExtractMesh: True
+
+  kInitializerNumMinTriangulatedPoints: 50
+  kFeatureMatchDefaultRatioTest: 0.7
+  kRansacThresholdNormalized: 0.05
+  kRansacProb: 0.9
+  kMinIdDistBetweenIntializingFrames: 1
+  kMaxIdDistBetweenIntializingFrames: 1
+  kCheckFeaturesOrientation: False
+  kUseMotionModel: False
+  kUseSearchFrameByProjection: False
+  kUseEssentialMatrixFitting: False
+
+  # kMinIdDistBetweenIntializingFrames: 4
+  # kMaxIdDistBetweenIntializingFrames: 10
+
   #kLogsFolder: /tmp/pyslam_logs       # to redirect the prints of SLAM to the set folder
   

@@ -34,10 +34,10 @@ from feature_manager_configs import FeatureManagerConfigs
 from feature_types import FeatureDescriptorTypes
 
 from loop_detector_base import LoopDetectorBase
-from loop_detector_dbow3 import LoopDetectorDBoW3
-from loop_detector_dbow2 import LoopDetectorDBoW2
-from loop_detector_obindex2 import LoopDetectorOBIndex2
-from loop_detector_ibow import LoopDetectorIBow
+# from loop_detector_dbow3 import LoopDetectorDBoW3
+# from loop_detector_dbow2 import LoopDetectorDBoW2
+# from loop_detector_obindex2 import LoopDetectorOBIndex2
+# from loop_detector_ibow import LoopDetectorIBow
 from loop_detector_vpr import LoopDetectorHdcDelf, LoopDetectorEigenPlaces, LoopDetectorNetVLAD, LoopDetectorSad, LoopDetectorAlexNet, LoopDetectorCosPlace
 from loop_detector_vlad import LoopDetectorVlad
 

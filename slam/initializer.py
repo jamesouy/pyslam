@@ -42,9 +42,11 @@ from utils_draw import draw_feature_matches
 kVerbose=True     
 kRansacThresholdNormalized = 0.0004  # metric threshold used for normalized image coordinates 
 kRansacProb = 0.999
+kRansacThresholdNormalized = Parameters.kRansacThresholdNormalized
+kRansacProb = Parameters.kRansacProb
 
-kMinIdDistBetweenIntializingFrames = 2
-kMaxIdDistBetweenIntializingFrames = 5   # N.B.: worse performances with values smaller than 5!
+kMinIdDistBetweenIntializingFrames = Parameters.kMinIdDistBetweenIntializingFrames
+kMaxIdDistBetweenIntializingFrames = Parameters.kMaxIdDistBetweenIntializingFrames   # N.B.: worse performances with values smaller than 5!
 
 kShowFeatureMatches = False # show the feature matches during initialization
 kShowGridCellCoverage = False

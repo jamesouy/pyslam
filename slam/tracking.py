@@ -86,6 +86,8 @@ kUseDynamicDesDistanceTh = True
 kRansacThresholdNormalized = 0.0004  # 0.0003 # metric threshold used for normalized image coordinates 
 kRansacProb = 0.999
 kNumMinInliersEssentialMat = 8
+kRansacThresholdNormalized = Parameters.kRansacThresholdNormalized
+kRansacProb = Parameters.kRansacProb
 
 kUseGroundTruthScale = False 
 
@@ -437,12 +439,13 @@ class Tracking:
                                                            
     # track camera motion of f_cur w.r.t. f_ref
     # estimate motion by matching keypoint descriptors                    
-    def track_reference_frame(self, f_ref, f_cur, name=''):
+    def track_reference_frame(self, f_ref: Frame, f_cur: Frame, name=''):
         print('>>>> tracking reference %d ...' %(f_ref.id))        
         if f_ref is None:
             return 
         # find keypoint matches between f_cur and kf_ref   
-        print('matching keypoints with ', FeatureTrackerShared.feature_matcher.matcher_type.name)              
+        print('matching keypoints with ', FeatureTrackerShared.feature_matcher.matcher_type.name)          
+        print(f'# prev frame has {len(f_ref.kps)} kps | curr frame has {len(f_cur.kps)} kps')    
         self.timer_match.start()
         matching_result = match_frames(f_cur, f_ref) 
         idxs_cur, idxs_ref = np.asarray(matching_result.idxs1), np.asarray(matching_result.idxs2)           
@@ -856,7 +859,7 @@ class Tracking:
 
 
     # @ main track method @
-    def track(self, img, img_right, depth, img_id, timestamp=None):
+    def track(self, img, img_right, depth, img_id, timestamp=None, pose_prior=None):
         Printer.cyan(f'@tracking {self.sensor_type.name}, img id: {img_id}, frame id: {Frame.next_id()}, state: {self.state.name}')
         time_start = time.time()
                 
@@ -981,7 +984,10 @@ class Tracking:
                 #self.predicted_pose = g2o.Isometry3d(np.dot(self.velocity, f_ref.pose))          # Tc3w = Tc2c1 * Tc2w   (predicted Tcw)        
                                                         
                 # set intial guess for current pose optimization                         
-                if kUseMotionModel and self.motion_model.is_ok:
+                if False and pose_prior is not None: # TODO: fix the pose stuff
+                    print('setting f_cur.pose using pose prior:', pose_prior)
+                    f_cur.update_pose(pose_prior)
+                elif kUseMotionModel and self.motion_model.is_ok:
                     print('using motion model for next pose prediction')                   
                     # update f_ref pose according to its reference keyframe (the pose of the reference keyframe could be updated by local mapping)
                     self.f_ref.update_pose(self.tracking_history.relative_frame_poses[-1] * self.f_ref.kf_ref.isometry3d)         

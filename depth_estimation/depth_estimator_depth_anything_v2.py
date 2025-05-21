@@ -62,13 +62,13 @@ class DepthEstimatorDepthAnythingV2(DepthEstimator):
             if device.type != 'cuda':
                 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
         if device.type == 'cuda':
-            print('DepthEstimatorDepthPro: Using CUDA')
+            print('DepthEstimatorDepthAnythingV2: Using CUDA')
         elif device.type == 'mps':
             if not torch.backends.mps.is_available():  # Should return True for MPS availability        
-                raise Exception('DepthEstimatorDepthPro: MPS is not available')
-            print('DepthEstimatorDepthPro: Using MPS')
+                raise Exception('DepthEstimatorDepthAnythingV2: MPS is not available')
+            print('DepthEstimatorDepthAnythingV2: Using MPS')
         else:
-            print('DepthEstimatorDepthPro: Using CPU') 
+            print('DepthEstimatorDepthAnythingV2: Using CPU') 
         transform = None
         model = DepthAnythingV2(**{**DepthEstimatorDepthAnythingV2.model_configs[encoder_name], 'max_depth': max_depth})
         dataset_name = 'vkitti' if dataset_env_type == DatasetEnvironmentType.OUTDOOR else 'hypersim'

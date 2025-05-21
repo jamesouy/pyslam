@@ -37,6 +37,14 @@ class Parameters:
     kLocalMappingParallelKpsMatching=True
     kLocalMappingParallelKpsMatchingNumWorkers=6
     kLocalMappingDebugAndPrintToFile = True
+
+    kMinIdDistBetweenIntializingFrames=2
+    kMaxIdDistBetweenIntializingFrames=5
+
+    # RANSAC
+    kRansacThresholdNormalized = 0.0004            # metric threshold used for normalized image coordinates (originally 0.0003)
+    kRansacThresholdPixels = 0.1                   # pixel threshold used for image coordinates 
+    kRansacProb = 0.999                            # (originally 0.999)
     
     
     # Number of desired keypoints per frame 

@@ -88,15 +88,18 @@ class VolumetricIntegratorTsdf(VolumetricIntegratorBase):
         last_output = None
         do_output = False
         timer = TimerFps("VolumetricIntegratorTsdf", is_verbose = kTimerVerbose)
+        print("volumetric integrator")
         timer.start()        
         try: 
             if is_running.value == 1:
+                print("is running")
                                     
                 self.last_input_task = q_in.get() # blocking call to get a new input task for volume integration
                 
                 if self.last_input_task is None: 
                     is_running.value = 0 # got a None to exit
                 else:
+                    print("integrator state:", self.last_input_task.task_type)
                     
                     if self.last_input_task.task_type == VolumetricIntegrationTaskType.INTEGRATE:
                         keyframe_data = self.last_input_task.keyframe_data

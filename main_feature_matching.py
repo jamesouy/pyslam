@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 #sys.path.append("../../")
 from config import Config
 
+from config_parameters import Parameters  
+
 from mplot_figure import MPlotFigure
 from feature_tracker import feature_tracker_factory, FeatureTrackerTypes 
 from feature_manager import feature_manager_factory
@@ -48,7 +50,7 @@ img1_box = None               # image 1 bounding box (initialization)
 model_fitting_type = None     # 'homography' or 'fundamental' (automatically set below, this is an initialization)
 draw_horizontal_layout=True   # draw matches with the two images in an horizontal or vertical layout (automatically set below, this is an initialization) 
 
-test_type='graf'             # select the test type (there's a template below to add your test)
+test_type='mytest'             # select the test type (there's a template below to add your test)
 #  
 if test_type == 'box': 
     img1 = cv2.imread(kScriptFolder + '/test/data/box.png')          # queryImage  
@@ -89,11 +91,11 @@ if test_type == 'mars':
     model_fitting_type='homography' 
     draw_horizontal_layout = True         
 # 
-# if test_type == 'your test':   # add your test here 
-#     img1 = cv2.imread('...') 
-#     img2 = cv2.imread('...')
-#     model_fitting_type='...' 
-#     draw_horizontal_layout = True     
+if test_type == 'mytest':   # add your test here 
+    img1 = cv2.imread(kScriptFolder + '/../data/gdc_outside/images/0015.png') 
+    img2 = cv2.imread(kScriptFolder + '/../data/gdc_outside/images/0016.png')
+    model_fitting_type='fundamental' 
+    draw_horizontal_layout = True     
     
 if img1 is None:
     raise IOError('Cannot find img1')    
@@ -129,20 +131,21 @@ if False:
 # Init Feature Tracker   
 #============================================  
 
-num_features=2000 
+num_features=20000
 
 tracker_type = None 
 # Force a tracker type if you prefer. First, you need to check if that's possible though.
-#tracker_type = FeatureTrackerTypes.DES_BF      # descriptor-based, brute force matching with knn 
+tracker_type = FeatureTrackerTypes.DES_BF      # descriptor-based, brute force matching with knn 
 #tracker_type = FeatureTrackerTypes.DES_FLANN  # descriptor-based, FLANN-based matching 
 #tracker_type = FeatureTrackerTypes.XFEAT        # based on XFEAT, "XFeat: Accelerated Features for Lightweight Image Matching"
 #tracker_type = FeatureTrackerTypes.LIGHTGLUE    # LightGlue, "LightGlue: Local Feature Matching at Light Speed"
 
 # Select your tracker configuration (see the file feature_tracker_configs.py). Some examples:
 # FeatureTrackerConfigs: SHI_TOMASI_ORB, FAST_ORB, ORB, ORB2, ORB2_FREAK, ORB2_BEBLID, BRISK, AKAZE, FAST_FREAK, SIFT, ROOT_SIFT, SURF, SUPERPOINT, CONTEXTDESC, LIGHTGLUE, XFEAT_XFEAT, LOFTR, DISK, ALIKED, KEYNETAFFNETHARDNET, XFEAT, XFEAT_XFEAT, ...
-tracker_config = FeatureTrackerConfigs.ROOT_SIFT
+# tracker_config = FeatureTrackerConfigs.ROOT_SIFT
+tracker_config = FeatureTrackerConfigs.ORB2
 tracker_config['num_features'] = num_features
-#tracker_config['match_ratio_test'] = 0.7        # 0.7 is the default in feature_tracker_configs.py
+# tracker_config['match_ratio_test'] = 0.7        # 0.7 is the default in feature_tracker_configs.py
 if tracker_type is not None:
     tracker_config['tracker_type'] = tracker_type
 print('feature_manager_config: ', tracker_config)
@@ -212,6 +215,7 @@ if des1_matched is not None and des2_matched is not None:
 
 hom_reproj_threshold = 3.0  # threshold for homography reprojection error: maximum allowed reprojection error in pixels (to treat a point pair as an inlier)
 fmat_err_thld = 3.0         # threshold for fundamental matrix estimation: maximum allowed distance from a point to an epipolar line in pixels (to treat a point pair as an inlier)  
+fmat_confidence = 0.9
 
 # Init inliers mask
 mask = None 
@@ -241,7 +245,7 @@ if kps1_matched.shape[0] > 10:
         reprojection_error = compute_hom_reprojection_error(H, kps1_matched, kps2_matched, mask)
         print('reprojection error: ', reprojection_error)
     else:  
-        F, mask = cv2.findFundamentalMat(kps1_matched, kps2_matched, ransac_method, fmat_err_thld, confidence=0.999)
+        F, mask = cv2.findFundamentalMat(kps1_matched, kps2_matched, ransac_method, fmat_err_thld, confidence=fmat_confidence)
         n_inlier = np.count_nonzero(mask)
 else:
     mask = None 

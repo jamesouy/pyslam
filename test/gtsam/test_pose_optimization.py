@@ -1,5 +1,5 @@
 import sys 
-sys.path.append("../../")
+sys.path.append(".")
 import config
 
 
@@ -145,8 +145,8 @@ class TestPoseOptimizerConvergence(TestCase):
         print(f'RMSE before: {RMSE}')
                 
         if True:
-            mean_squared_error, success, num_valid_points = optimizer_gtsam.pose_optimization(frame, verbose=True, rounds=10)
-            #mean_squared_error, success, num_valid_points = optimizer_g2o.pose_optimization(frame, verbose=True, rounds=10)
+            # mean_squared_error, success, num_valid_points = optimizer_gtsam.pose_optimization(frame, verbose=True, rounds=10)
+            mean_squared_error, success, num_valid_points = optimizer_g2o.pose_optimization(frame, verbose=True, rounds=10)
 
         # Get the estimated pose_cw
         pose_estimated = frame.pose
